@@ -1405,8 +1405,14 @@ function onTimeout(side) {
   else             showResult('⏱', 'Time Out', 'Black ran out of time. You win!');
 }
 
-// ─── Piece glyphs (single outline set; color via CSS) ─────
-const GLYPH = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟' };
+// ─── Piece glyphs — outline set for white, filled for black ──
+// Using correct Unicode: ♔♕♖♗♘♙ (U+2654-59, outline) for white
+//                        ♚♛♜♝♞♟ (U+265A-5F, filled)  for black
+// Shape alone distinguishes them, regardless of CSS color rendering
+const GLYPH = {
+  w: { k:'♔', q:'♕', r:'♖', b:'♗', n:'♘', p:'♙' },
+  b: { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟' }
+};
 
 function fileChar(f) { return String.fromCharCode(97 + f); }
 
@@ -1464,9 +1470,9 @@ function renderPieces() {
       }
     }
 
-    // Piece (same glyph, colored by class)
+    // Piece — correct glyph per color, then CSS tints it further
     if (piece) {
-      inner += `<span class="piece ${piece.color}">${GLYPH[piece.type]}</span>`;
+      inner += `<span class="piece ${piece.color}">${GLYPH[piece.color][piece.type]}</span>`;
     }
     sq.innerHTML = inner;
 
@@ -1674,21 +1680,53 @@ function showResult(icon, title, sub) {
 }
 
 // ─── Stockfish Integration ────────────────────────────────
+let sfTimeoutId = null;
+
+// Shared random-move fallback (used when Stockfish is absent or times out)
+function randomMove() {
+  const moves = chess.moves({ verbose: true });
+  if (moves.length === 0) { checkGameOver(); return; }
+  const m = moves[Math.floor(Math.random() * moves.length)];
+  const result = chess.move(m);
+  if (result) {
+    lastMove = result;
+    playClick(result.captured ? 'capture' : 'move');
+    renderPieces(); updateCaptures(); updateHistory();
+  }
+  updateCheckFlag();
+  aiThinking = false;
+  switchTimerSide('w');
+  if (!checkGameOver()) setBanner('Your move · <b>White</b>');
+}
+
 function initStockfish(skill) {
   if (stockfish) { try { stockfish.terminate(); } catch(e){} }
   stockfish = null;
 
-  try {
-    const sfUrl = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
-    stockfish = new Worker(sfUrl);
-    stockfish.onmessage = onStockfishMessage;
-    stockfish.postMessage('uci');
-    stockfish.postMessage(`setoption name Skill Level value ${skill}`);
-    stockfish.postMessage('isready');
-  } catch(e) {
-    console.warn('Stockfish worker failed, using random moves:', e);
-    stockfish = null;
-  }
+  const sfUrl = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+
+  // Fetch then create a same-origin blob Worker.
+  // Direct new Worker(externalUrl) is blocked by iOS Safari's cross-origin Worker
+  // restriction — the Worker object is created but the script silently never loads,
+  // so bestmove never arrives and the game freezes on "Black is thinking…"
+  fetch(sfUrl)
+    .then(r => { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+    .then(text => {
+      const blob = new Blob([text], { type: 'application/javascript' });
+      const blobUrl = URL.createObjectURL(blob);
+      const w = new Worker(blobUrl);
+      URL.revokeObjectURL(blobUrl);
+      w.onmessage = onStockfishMessage;
+      w.onerror   = () => { stockfish = null; };
+      w.postMessage('uci');
+      w.postMessage(`setoption name Skill Level value ${skill}`);
+      w.postMessage('isready');
+      stockfish = w;
+    })
+    .catch(e => {
+      console.warn('Stockfish unavailable, using random moves:', e);
+      stockfish = null;
+    });
 }
 
 function onStockfishMessage(e) {
@@ -1696,14 +1734,12 @@ function onStockfishMessage(e) {
   if (typeof line !== 'string') return;
 
   if (line.startsWith('bestmove')) {
+    clearTimeout(sfTimeoutId); // cancel the safety timeout
+
     const parts = line.split(' ');
     const moveStr = parts[1];
-    if (!moveStr || moveStr === '(none)') {
-      checkGameOver();
-      return;
-    }
+    if (!moveStr || moveStr === '(none)') { checkGameOver(); return; }
 
-    // Parse move string e.g. "e2e4", "e7e8q"
     const from = moveStr.slice(0, 2);
     const to   = moveStr.slice(2, 4);
     const prom = moveStr[4] || undefined;
@@ -1714,17 +1750,10 @@ function onStockfishMessage(e) {
       const isCapture = moveResult.captured;
       const isCheck   = chess.in_check();
       playClick(isCapture ? 'capture' : isCheck ? 'check' : 'move');
-      renderPieces();
-      updateCaptures();
-      updateHistory();
-      updateCheckFlag();
-
+      renderPieces(); updateCaptures(); updateHistory(); updateCheckFlag();
       aiThinking = false;
       switchTimerSide('w');
-
-      if (!checkGameOver()) {
-        setBanner('Your move · <b>White</b>');
-      }
+      if (!checkGameOver()) setBanner('Your move · <b>White</b>');
     } else {
       aiThinking = false;
       setBanner('Your move · <b>White</b>');
@@ -1734,32 +1763,25 @@ function onStockfishMessage(e) {
 
 function askStockfish() {
   if (!stockfish) {
-    // Fallback: random legal move
-    setTimeout(() => {
-      const moves = chess.moves({ verbose: true });
-      if (moves.length === 0) { checkGameOver(); return; }
-      const m = moves[Math.floor(Math.random() * moves.length)];
-      const result = chess.move(m);
-      if (result) {
-        lastMove = result;
-        playClick(result.captured ? 'capture' : 'move');
-        renderPieces();
-        updateCaptures();
-        updateHistory();
-      }
-      updateCheckFlag();
-      aiThinking = false;
-      switchTimerSide('w');
-      if (!checkGameOver()) setBanner('Your move · <b>White</b>');
-    }, 400 + Math.random() * 600);
+    // Stockfish not loaded yet (or unavailable) — use random move with delay
+    setTimeout(randomMove, 400 + Math.random() * 600);
     return;
   }
 
   const fen = chess.fen();
   stockfish.postMessage(`position fen ${fen}`);
-  // Vary think time by skill level
   const thinkMs = skillLevel < 5 ? 200 : skillLevel < 12 ? 500 : skillLevel < 20 ? 1000 : 1500;
   stockfish.postMessage(`go movetime ${thinkMs}`);
+
+  // Hard safety net: if bestmove never comes back (e.g. Worker silently failed),
+  // fall back to a random move after thinkMs + 4 s so the game never freezes
+  clearTimeout(sfTimeoutId);
+  sfTimeoutId = setTimeout(() => {
+    if (!aiThinking) return;
+    console.warn('Stockfish timeout — falling back to random move');
+    stockfish = null; // stop trying; use random for the rest of the game
+    randomMove();
+  }, thinkMs + 4000);
 }
 
 // ─── New Game ─────────────────────────────────────────────
