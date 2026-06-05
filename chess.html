@@ -62,8 +62,7 @@ body {
   pointer-events: none;
   transition: opacity 0.45s ease;
   z-index: 1;
-  /* Use dynamic viewport height so mobile browser chrome doesn't cut content */
-  height: 100dvh;
+  /* inset:0 already fills the viewport — no explicit height needed */
 }
 .screen.active {
   opacity: 1;
@@ -798,12 +797,12 @@ body {
    RESPONSIVE
    ══════════════════════════════════════════════ */
 
-/* ── Tablet (≤ 1100px): collapse game into vertical stack ── */
+/* ── Tablet (≤ 1100px): collapse game 3-col ── */
 @media (max-width: 1100px) {
   #game { overflow-y: auto; }
   .game-body {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto auto;
     grid-template-areas:
       "clk-b"
       "board"
@@ -811,31 +810,15 @@ body {
       "right"
       "clk-w";
   }
-  .clock-pos-black {
-    border-right: none;
-    border-bottom: 1px solid var(--soft-border);
-    padding: 16px 22px;
-  }
-  .clock-pos-white {
-    border-right: none;
-    border-top: 1px solid var(--soft-border);
-    padding: 16px 22px;
-  }
+  .clock-pos-black { border-right: none; border-bottom: 1px solid var(--soft-border); padding: 16px 22px; }
+  .clock-pos-white { border-right: none; border-top: 1px solid var(--soft-border); padding: 16px 22px; }
   .side.left {
-    border-right: none;
-    border-top: 1px solid var(--soft-border);
-    padding: 16px 22px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 16px;
+    border-right: none; border-top: 1px solid var(--soft-border);
+    padding: 16px 22px; flex-direction: row; flex-wrap: wrap; gap: 16px;
   }
   .side.left > div { flex: 1 1 200px; }
-  .side.right {
-    border-left: none;
-    border-top: 1px solid var(--soft-border);
-    padding: 16px 22px;
-  }
-  .moves { max-height: 220px; }
+  .side.right { border-left: none; border-top: 1px solid var(--soft-border); padding: 16px 22px; }
+  .moves { max-height: 200px; }
 }
 
 /* ── Difficulty 2-col on tablet ── */
@@ -844,52 +827,90 @@ body {
 }
 
 /* ════════════════════════════════════════════
-   MOBILE PORTRAIT (≤ 700px)
-   No scrolling — everything fits 100dvh
+   MOBILE — all phones ≤ 700px wide
    ════════════════════════════════════════════ */
 @media (max-width: 700px) {
 
-  /* ── Home ── */
-  #home { padding: 0 20px; }
-  .home-crown { font-size: 46px; margin-bottom: 16px; }
-  .home-edition { margin-bottom: 12px; }
-  .home-sub { margin-bottom: 30px; }
-  .home-stats { flex-direction: column; gap: 8px; bottom: 16px; font-size: 11px; }
-
-  /* ── Difficulty ── */
-  #difficulty { padding: 36px 14px 20px; overflow-y: auto; }
-  .diff-head { margin-bottom: 22px; }
-  .diff-head h2 { font-size: clamp(30px, 8vw, 46px); }
-  .diff-grid { grid-template-columns: 1fr 1fr; gap: 10px; max-width: 100%; }
-  .diff-card { padding: 16px 13px 14px; }
-  .diff-card .glyph { font-size: 34px; margin-bottom: 10px; }
-  .diff-card h3 { font-size: 18px; }
-  .diff-card .desc { font-size: 11.5px; line-height: 1.4; min-height: 44px; }
-  .diff-card .rating { font-size: 11px; margin-top: 8px; }
-  .diff-actions { flex-direction: column-reverse; width: 100%; gap: 10px; margin-top: 22px; }
-  .btn-arena, #btnBack { width: 100%; text-align: center; }
-
-  /* ── Game: lock to viewport, zero scroll ── */
-  #game { overflow: hidden; }
-  .game {
-    height: 100dvh;
-    height: 100vh; /* fallback */
-    overflow: hidden;
+  /* ─────────────────────────────
+     SCREEN 1 · HOME
+     Fix: stats were position:absolute and overlapping button
+  ───────────────────────────── */
+  #home {
+    padding: 0 20px 20px;
+    overflow-y: auto;
+    justify-content: center;
+  }
+  .home-crown { font-size: 42px; margin-bottom: 14px; }
+  .home-edition { font-size: 11px; letter-spacing: 0.28em; margin-bottom: 10px; }
+  .home-title { font-size: clamp(52px, 16vw, 88px); margin-bottom: 16px; }
+  .home-tagline { font-size: 13px; margin-bottom: 8px; }
+  .home-sub { font-size: 11px; letter-spacing: 0.16em; margin-bottom: 26px; }
+  .btn-play { padding: 14px 44px; }
+  /* Pull stats into normal flow so they don't float over the button */
+  .home-stats {
+    position: static;
+    margin-top: 32px;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
   }
 
-  /* Topbar: slim */
+  /* ─────────────────────────────
+     SCREEN 2 · DIFFICULTY
+     Fix: was justify-content:center (from .screen), content clipping off bottom
+  ───────────────────────────── */
+  #difficulty {
+    justify-content: flex-start;
+    align-items: center;
+    padding: 32px 12px 28px;
+    overflow-y: auto;
+    gap: 0;
+  }
+  .diff-head { margin-bottom: 18px; text-align: center; width: 100%; }
+  .diff-head h2 { font-size: clamp(26px, 7vw, 40px); margin-top: 10px; }
+  .diff-head p { font-size: 13px; margin-top: 8px; }
+  .diff-grid { grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: 100%; }
+  .diff-card { padding: 14px 12px 12px; }
+  .diff-card .glyph { font-size: 30px; margin-bottom: 8px; }
+  .diff-card h3 { font-size: 17px; }
+  .diff-card .desc { font-size: 11px; min-height: 40px; margin-top: 6px; line-height: 1.4; }
+  .diff-card .rating { font-size: 10px; margin-top: 8px; }
+  .diff-actions { flex-direction: column-reverse; width: 100%; gap: 8px; margin-top: 18px; }
+  .btn-arena, #btnBack { width: 100%; text-align: center; box-sizing: border-box; }
+
+  /* ─────────────────────────────
+     SCREEN 3 · GAME
+     Fix: use height:100% (of fixed .screen) not 100vh
+     Fix: remove explicit game-body height (flex:1 handles it)
+     Fix: correct board calc (no dvh/vh fallback confusion)
+  ───────────────────────────── */
+  #game { overflow: hidden; }
+  /* .game already has width:100%;height:100% from desktop — just ensure: */
+  .game { overflow: hidden; }
+
+  /* Slim topbar */
   .topbar {
-    height: 46px;
-    padding: 0 14px;
+    height: 46px; min-height: 46px;
+    padding: 0 12px;
     flex-shrink: 0;
   }
-  .topbar .brand { font-size: 16px; gap: 8px; }
-  .topbar .brand .kc { font-size: 17px; }
+  .topbar .brand { font-size: 15px; gap: 7px; }
+  .topbar .brand .kc { font-size: 16px; }
   .topbar .mid { display: none; }
-  #btnExitMenu { font-size: 10px; padding: 6px 10px; letter-spacing: 0.1em; }
+  #btnExitMenu { font-size: 10px; padding: 6px 10px; }
 
-  /* Game body: 4-row grid — black clock / board / white clock / controls */
+  /*
+   4-row game grid.
+   .game is height:100% of .screen (position:fixed;inset:0) = exact viewport.
+   .topbar is 46px flex-shrink:0.
+   .game-body is flex:1 = viewport - 46px.
+   Rows: 50px | 1fr | 50px | 44px  (total fixed = 144px; 1fr takes the rest).
+  */
   .game-body {
+    flex: 1;
+    min-height: 0;
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: 50px 1fr 50px 44px;
@@ -898,103 +919,73 @@ body {
       "board"
       "clk-w"
       "ctrls";
-    height: calc(100dvh - 46px);
-    height: calc(100vh - 46px);
     overflow: hidden;
   }
 
-  /* Black clock strip — top */
-  .clock-pos-black {
-    grid-area: clk-b;
-    border-right: none;
-    border-bottom: 1px solid var(--soft-border);
-    padding: 0 14px;
-    /* flatten the card */
-    background: linear-gradient(90deg, rgba(51,58,45,0.6), rgba(42,48,38,0.4));
-    border-radius: 0;
-    border-top: none;
-    border-left: none;
-    box-shadow: none;
-  }
-
-  /* White clock strip — bottom of board */
+  /* Clock strips — flat, no card styling */
+  .clock-pos-black,
   .clock-pos-white {
-    grid-area: clk-w;
-    border-right: none;
-    border-top: 1px solid var(--soft-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 0 14px;
-    background: linear-gradient(90deg, rgba(51,58,45,0.6), rgba(42,48,38,0.4));
+    background: var(--bg-2);
     border-radius: 0;
-    border-bottom: none;
-    border-left: none;
     box-shadow: none;
   }
+  .clock-pos-black { grid-area: clk-b; border: none; border-bottom: 1px solid var(--soft-border); }
+  .clock-pos-white { grid-area: clk-w; border: none; border-top:    1px solid var(--soft-border); }
+  .clock-pos-black.active { background: rgba(196,122,84,0.08); border-bottom-color: rgba(196,122,84,0.3); }
+  .clock-pos-white.active { background: rgba(196,122,84,0.08); border-top-color:    rgba(196,122,84,0.3); }
+  #game .clock .who { display: flex; align-items: center; gap: 8px; }
+  #game .clock .avatar { width: 28px; height: 28px; font-size: 14px; }
+  #game .clock .name { font-size: 13px; font-weight: 600; }
+  #game .clock .role { font-size: 9px; margin-top: 2px; }
+  #game .clock .time { font-size: 24px; }
+  #game .clock.active .time { color: var(--gold-hi); text-shadow: 0 0 12px rgba(196,122,84,0.4); }
 
-  /* Active clock: subtle gold tint on the strip */
-  .clock-pos-black.active,
-  .clock-pos-white.active {
-    background: linear-gradient(90deg, rgba(196,122,84,0.10), rgba(196,122,84,0.04));
-    border-color: rgba(196,122,84,0.28);
-    box-shadow: none;
-  }
-
-  /* Clock internals: smaller on mobile strips */
-  #game .clock { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  #game .clock .avatar { width: 30px; height: 30px; font-size: 15px; }
-  #game .clock .name { font-size: 13px; }
-  #game .clock .role { font-size: 10px; }
-  #game .clock .time { font-size: 26px; }
-
-  /* Hide captured-pieces panel on mobile */
+  /* Hide captured pieces panel */
   .side.left { display: none; }
 
-  /* Board area: fills the 1fr row, no scroll */
+  /* Board area */
   .board-wrap {
     grid-area: board;
-    padding: 6px 8px 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 5px 0;
     overflow: hidden;
+    min-height: 0;
   }
-
-  /* Turn banner: compact */
-  .turn-banner {
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    margin-bottom: 6px;
-    padding: 2px 0;
-  }
-
-  /* Board frame: thinner padding on mobile */
+  .turn-banner { font-size: 10px; letter-spacing: 0.14em; margin-bottom: 5px; padding: 0; }
   .board-frame {
-    padding: 8px;
-    box-shadow:
-      0 0 0 1px var(--gold-deep),
-      0 0 0 3px #161a12,
-      0 0 0 4px rgba(196,122,84,0.45),
-      0 12px 40px rgba(0,0,0,0.7);
+    padding: 7px;
+    box-shadow: 0 0 0 1px var(--gold-deep), 0 0 0 3px #161a12,
+                0 0 0 4px rgba(196,122,84,0.4), 0 8px 24px rgba(0,0,0,0.6);
   }
+  .check-flag { margin-top: 4px; height: auto; font-size: 10px; }
 
-  /* Board size: fills height after all chrome is subtracted */
+  /*
+   Board size:
+   • viewport height    = 100vh  (fine to use — .screen is position:fixed so it matches)
+   • fixed chrome       = topbar(46) + clk-b(50) + clk-w(50) + ctrls(44)  = 190px
+   • board-wrap overhead= banner(17) + frame-pad(14) + check(14) + wrap-pad(10) = 55px
+   • total              = 245px
+   • board height avail = 100vh - 245px
+   • board width avail  = 100vw - frame-pad(14px) = 100vw - 14px
+   → board = min(100vh - 245px, 100vw - 14px)
+   iPhone SE  375×667 → min(422, 361) = 361px  ✓
+   iPhone 14  390×844 → min(599, 376) = 376px  ✓
+   Pixel 7    412×892 → min(647, 398) = 398px  ✓
+  */
   #chessboard {
-    /* non-board chrome: topbar(46) + clk-b(50) + clk-w(50) + ctrls(44)
-       + board-wrap-padding(10) + banner(22) + board-frame-padding(16) + check-flag(18) ≈ 256px */
-    width:  min(calc(100dvh - 256px), calc(100vw - 16px));
-    height: min(calc(100dvh - 256px), calc(100vw - 16px));
-    /* dvh fallback */
-    width:  min(calc(100vh - 256px),  calc(100vw - 16px));
-    height: min(calc(100vh - 256px),  calc(100vw - 16px));
+    width:  min(calc(100vh - 245px), calc(100vw - 14px));
+    height: min(calc(100vh - 245px), calc(100vw - 14px));
   }
+  .sq .piece { font-size: min(10.5vw, 50px); }
 
-  /* Piece size proportional to board width */
-  .sq .piece { font-size: min(10.8vw, 52px); }
-
-  /* Check flag */
-  .check-flag { margin-top: 4px; font-size: 11px; }
-
-  /* Controls bar: new game + resign in a flat row */
+  /* Controls row */
   .side.right {
     grid-area: ctrls;
     flex-direction: row;
@@ -1004,131 +995,92 @@ body {
     border-top: 1px solid var(--soft-border);
     gap: 8px;
     overflow: hidden;
+    min-height: 0;
   }
   .side.right .panel-title,
   .side.right .moves { display: none; }
-  .game-controls {
-    margin-top: 0;
-    flex: 1;
-    gap: 8px;
-  }
-  .game-controls .btn-ghost {
-    flex: 1;
-    padding: 7px 6px;
-    font-size: 11px;
-    text-align: center;
-  }
+  .game-controls { margin-top: 0; flex: 1; gap: 8px; }
+  .game-controls .btn-ghost { flex: 1; padding: 6px 4px; font-size: 10px; text-align: center; }
 
-  /* Result card */
-  .result-card { padding: 30px 20px; gap: 12px; }
-  .result-icon { font-size: 48px; }
-  .result-title { font-size: 22px; }
-  .result-btns { flex-direction: column; width: 100%; }
-  .btn-primary, .btn-secondary { width: 100%; }
+  /* ─────────────────────────────
+     RESULT OVERLAY
+  ───────────────────────────── */
+  .result-card { padding: 28px 20px; gap: 10px; max-width: 88vw; }
+  .result-icon { font-size: 44px; }
+  .result-title { font-size: 20px; }
+  .result-sub { font-size: 13px; }
+  .result-btns { flex-direction: column; width: 100%; gap: 8px; margin-top: 4px; }
+  .btn-primary, .btn-secondary { width: 100%; padding: 12px; text-align: center; }
 }
 
 /* ════════════════════════════════════════════
-   LANDSCAPE PHONE (short + wide)
+   LANDSCAPE PHONE (≤ 500px tall)
    ════════════════════════════════════════════ */
-@media (max-height: 520px) and (orientation: landscape) {
+@media (max-height: 500px) and (orientation: landscape) {
   #game { overflow: hidden; }
-  .game { height: 100dvh; height: 100vh; overflow: hidden; }
+  .game { overflow: hidden; }
 
-  .topbar { height: 40px; padding: 0 12px; flex-shrink: 0; }
+  .topbar { height: 38px; min-height: 38px; padding: 0 10px; flex-shrink: 0; }
   .topbar .mid { display: none; }
-  #btnExitMenu { font-size: 10px; padding: 5px 10px; }
+  .topbar .brand { font-size: 14px; }
+  #btnExitMenu { font-size: 10px; padding: 4px 8px; }
 
-  /* 3-col: slim clocks left | board | slim controls right */
+  /* 3-col: left-clock | board | right-clock */
   .game-body {
+    flex: 1; min-height: 0;
     display: grid;
-    grid-template-columns: 110px 1fr 110px;
+    grid-template-columns: 96px 1fr 96px;
     grid-template-rows: 1fr;
     grid-template-areas: "clk-b board clk-w";
-    height: calc(100dvh - 40px);
-    height: calc(100vh - 40px);
     overflow: hidden;
   }
 
-  .clock-pos-black {
-    grid-area: clk-b;
-    border-right: 1px solid var(--soft-border);
-    border-bottom: none;
-    border-top: none;
-    border-left: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: rgba(42,48,38,0.5);
-    padding: 10px 10px;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 12px;
-  }
+  .clock-pos-black,
   .clock-pos-white {
-    grid-area: clk-w;
-    border-left: 1px solid var(--soft-border);
-    border-right: none;
-    border-top: none;
-    border-bottom: none;
-    border-radius: 0;
-    box-shadow: none;
-    background: rgba(42,48,38,0.5);
-    padding: 10px 10px;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 12px;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    padding: 10px 8px; gap: 6px;
+    background: var(--bg-2);
+    border-radius: 0; box-shadow: none;
   }
+  .clock-pos-black { grid-area: clk-b; border: none; border-right: 1px solid var(--soft-border); }
+  .clock-pos-white { grid-area: clk-w; border: none; border-left:  1px solid var(--soft-border); }
   .clock-pos-black.active,
-  .clock-pos-white.active {
-    background: rgba(196,122,84,0.09);
-    box-shadow: none;
-  }
+  .clock-pos-white.active { background: rgba(196,122,84,0.09); }
 
-  /* In landscape, stack who+time vertically */
-  #game .clock { flex-direction: column; align-items: flex-start; gap: 8px; }
-  #game .clock .who { gap: 8px; }
-  #game .clock .avatar { width: 26px; height: 26px; font-size: 13px; }
+  #game .clock { flex-direction: column; gap: 4px; }
+  #game .clock .who { gap: 5px; }
+  #game .clock .avatar { width: 22px; height: 22px; font-size: 11px; }
   #game .clock .name { font-size: 11px; }
   #game .clock .role { font-size: 9px; }
-  #game .clock .time { font-size: 22px; }
+  #game .clock .time { font-size: 20px; }
 
   .side.left { display: none; }
 
   .board-wrap {
-    grid-area: board;
-    padding: 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    grid-area: board; min-height: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 4px; overflow: hidden;
   }
-  .board-frame { padding: 6px; }
-  .turn-banner { font-size: 9px; margin-bottom: 4px; padding: 0; }
+  .board-frame { padding: 5px; }
+  .turn-banner { font-size: 9px; margin-bottom: 3px; }
   .check-flag { margin-top: 2px; font-size: 9px; }
 
+  /* landscape: height-constrained board */
   #chessboard {
-    /* landscape: height is the constraint */
-    width:  min(calc(100dvh - 40px - 20px), calc(100vw - 220px - 12px));
-    height: min(calc(100dvh - 40px - 20px), calc(100vw - 220px - 12px));
-    width:  min(calc(100vh  - 40px - 20px), calc(100vw - 220px - 12px));
-    height: min(calc(100vh  - 40px - 20px), calc(100vw - 220px - 12px));
+    width:  min(calc(100vh - 38px - 22px), calc(100vw - 192px - 10px));
+    height: min(calc(100vh - 38px - 22px), calc(100vw - 192px - 10px));
   }
-  .sq .piece { font-size: min(9.5vh, 44px); }
+  .sq .piece { font-size: min(8.5vh, 38px); }
 
-  /* Right col: controls only */
   .side.right {
-    border-left: 1px solid var(--soft-border);
-    border-top: none;
-    padding: 10px 8px;
-    gap: 8px;
-    overflow: hidden;
+    border-left: 1px solid var(--soft-border); border-top: none;
+    padding: 8px 6px; gap: 6px; overflow: hidden;
   }
-  .side.right .panel-title,
-  .side.right .moves { display: none; }
+  .side.right .panel-title, .side.right .moves { display: none; }
   .game-controls { margin-top: 0; flex-direction: column; gap: 6px; }
-  .game-controls .btn-ghost { padding: 8px 6px; font-size: 10px; text-align: center; }
+  .game-controls .btn-ghost { padding: 7px 4px; font-size: 10px; text-align: center; }
 }
 
 /* ════════════════════════════════════════════
@@ -1138,7 +1090,7 @@ body {
   .home-stats { display: none; }
   .diff-grid { grid-template-columns: 1fr; }
   .diff-card .desc { min-height: 0; }
-  #game .clock .time { font-size: 22px; }
+  #game .clock .time { font-size: 20px; }
 }
 </style>
 </head>
