@@ -1566,7 +1566,7 @@ function renderCapturedBox(elId, pieces, adv) {
     el.innerHTML = '<span class="empty">— none yet —</span>';
     return;
   }
-  el.innerHTML = sorted.map(p => `<span class="cp ${p.c}">${GLYPH[p.t]}</span>`).join('')
+  el.innerHTML = sorted.map(p => `<span class="cp ${p.c}">${GLYPH[p.c][p.t]}</span>`).join('')
     + (adv > 0 ? `<span class="adv">+${adv}</span>` : '');
 }
 
